@@ -244,6 +244,97 @@
     }
     .btn-remove:hover { background: #fde8e8; border-color: var(--danger); }
 
+    /* ── Searchable Item Autocomplete ── */
+    .autocomplete-wrap {
+      position: relative;
+      width: 100%;
+    }
+    .autocomplete-input {
+      width: 100%;
+      padding: 10px 32px 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: #fff;
+      transition: border 0.15s, box-shadow 0.15s;
+    }
+    .autocomplete-input:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(29,111,184,0.12);
+    }
+    .autocomplete-input.is-valid {
+      border-color: #1a7a4a;
+      background: #f6fcf9;
+    }
+    .autocomplete-input.is-invalid {
+      border-color: var(--danger);
+      background: #fff8f8;
+    }
+    .autocomplete-chevron {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 13px;
+      pointer-events: none;
+      transition: transform 0.2s;
+    }
+    .autocomplete-wrap.open .autocomplete-chevron {
+      transform: translateY(-50%) rotate(180deg);
+    }
+    .autocomplete-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 6px 24px rgba(15,30,53,0.13);
+      z-index: 200;
+      max-height: 220px;
+      overflow-y: auto;
+      display: none;
+    }
+    .autocomplete-wrap.open .autocomplete-dropdown { display: block; }
+    .autocomplete-option {
+      padding: 9px 12px;
+      font-size: 13px;
+      color: var(--text);
+      cursor: pointer;
+      border-bottom: 1px solid #f0f4f8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.1s;
+    }
+    .autocomplete-option:last-child { border-bottom: none; }
+    .autocomplete-option:hover,
+    .autocomplete-option.active-option {
+      background: #eef5fc;
+      color: var(--navy);
+    }
+    .autocomplete-option mark {
+      background: #fff3cd;
+      color: var(--navy);
+      font-weight: 600;
+      border-radius: 2px;
+      padding: 0 1px;
+    }
+    .autocomplete-empty {
+      padding: 12px;
+      font-size: 13px;
+      color: var(--muted);
+      text-align: center;
+      font-style: italic;
+    }
+    .autocomplete-dropdown::-webkit-scrollbar { width: 6px; }
+    .autocomplete-dropdown::-webkit-scrollbar-track { background: #f4f6f9; }
+    .autocomplete-dropdown::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
     .btn-add-item {
       margin-top: 10px;
       padding: 8px 16px;
@@ -476,7 +567,7 @@
   const APPROVERS_SHEET_TAB = 'Approvers';
   // ══════════════════════════════════════════════════════
 
-  const UNITS = ['EA', 'sheet', 'tube', 'reel', 'box', 'kg', 'g', 'L', 'mL', 'ft', 'm', 'set', 'pair', 'roll', 'pack', 'bag', 'drum', 'can'];
+  const UNITS = ['ea', 'sheet', 'tube', 'reel', 'box', 'kg', 'g', 'L', 'mL', 'ft', 'm', 'set', 'pair', 'roll', 'pack', 'bag', 'drum', 'can'];
 
   let currentType = 'REQUEST';
   let itemOptions = [];
@@ -518,8 +609,7 @@
       itemOptions = await parseGViz(itemsRes);
       approverOptions = await parseGViz(approversRes);
 
-      // Refresh item row selects
-      document.querySelectorAll('.item-select').forEach(sel => populateItemSelect(sel));
+      // Autocomplete inputs will pick up itemOptions dynamically — nothing to pre-populate
 
       // Populate approver dropdown
       const approverSel = document.getElementById('approverSelect');
@@ -536,6 +626,7 @@
   }
 
   function populateItemSelect(sel) {
+    // Legacy: kept for compatibility but no longer used for autocomplete rows
     const current = sel.value;
     sel.innerHTML = '<option value="">— Select Item —</option>';
     itemOptions.forEach(item => {
@@ -545,6 +636,152 @@
       if (item === current) opt.selected = true;
       sel.appendChild(opt);
     });
+  }
+
+  // ── Searchable Autocomplete ───────────────────────────
+  function createAutocomplete(rowId) {
+    const wrap = document.createElement('div');
+    wrap.className = 'autocomplete-wrap';
+    wrap.id = `ac-wrap-${rowId}`;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'autocomplete-input';
+    input.placeholder = 'Type part number or name…';
+    input.autocomplete = 'off';
+    input.setAttribute('data-row', rowId);
+    input.setAttribute('data-value', ''); // stores the confirmed selected value
+
+    const chevron = document.createElement('span');
+    chevron.className = 'autocomplete-chevron';
+    chevron.textContent = '▾';
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'autocomplete-dropdown';
+
+    wrap.appendChild(input);
+    wrap.appendChild(chevron);
+    wrap.appendChild(dropdown);
+
+    // ── Events ──
+    let activeIdx = -1;
+
+    function openDropdown(filter) {
+      const q = (filter || '').toLowerCase().trim();
+      const matches = q
+        ? itemOptions.filter(o => o.toLowerCase().includes(q))
+        : itemOptions;
+
+      dropdown.innerHTML = '';
+      activeIdx = -1;
+
+      if (matches.length === 0) {
+        dropdown.innerHTML = `<div class="autocomplete-empty">No items match "${filter}"</div>`;
+      } else {
+        matches.forEach((item, i) => {
+          const div = document.createElement('div');
+          div.className = 'autocomplete-option';
+          div.setAttribute('data-val', item);
+
+          // Highlight matching characters
+          if (q) {
+            const idx = item.toLowerCase().indexOf(q);
+            if (idx >= 0) {
+              div.innerHTML =
+                escHtml(item.slice(0, idx)) +
+                `<mark>${escHtml(item.slice(idx, idx + q.length))}</mark>` +
+                escHtml(item.slice(idx + q.length));
+            } else {
+              div.textContent = item;
+            }
+          } else {
+            div.textContent = item;
+          }
+
+          div.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            selectItem(item);
+          });
+          dropdown.appendChild(div);
+        });
+      }
+
+      wrap.classList.add('open');
+    }
+
+    function closeDropdown() {
+      wrap.classList.remove('open');
+      activeIdx = -1;
+    }
+
+    function selectItem(value) {
+      input.value = value;
+      input.setAttribute('data-value', value);
+      input.classList.remove('is-invalid');
+      input.classList.add('is-valid');
+      closeDropdown();
+    }
+
+    function clearSelection() {
+      input.setAttribute('data-value', '');
+      input.classList.remove('is-valid', 'is-invalid');
+    }
+
+    input.addEventListener('focus', () => openDropdown(input.value));
+    input.addEventListener('input', () => {
+      clearSelection();
+      openDropdown(input.value);
+    });
+    input.addEventListener('blur', () => {
+      setTimeout(() => {
+        // Validate: must match an exact item
+        const typed = input.value.trim();
+        if (typed && itemOptions.includes(typed)) {
+          selectItem(typed);
+        } else if (typed) {
+          input.classList.add('is-invalid');
+          input.setAttribute('data-value', '');
+        }
+        closeDropdown();
+      }, 150);
+    });
+
+    // Keyboard navigation
+    input.addEventListener('keydown', (e) => {
+      const opts = dropdown.querySelectorAll('.autocomplete-option');
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIdx = Math.min(activeIdx + 1, opts.length - 1);
+        opts.forEach((o, i) => o.classList.toggle('active-option', i === activeIdx));
+        opts[activeIdx]?.scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIdx = Math.max(activeIdx - 1, 0);
+        opts.forEach((o, i) => o.classList.toggle('active-option', i === activeIdx));
+        opts[activeIdx]?.scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (activeIdx >= 0 && opts[activeIdx]) {
+          selectItem(opts[activeIdx].getAttribute('data-val'));
+        }
+      } else if (e.key === 'Escape') {
+        closeDropdown();
+        input.blur();
+      }
+    });
+
+    // Click chevron to toggle
+    chevron.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      if (wrap.classList.contains('open')) { closeDropdown(); input.blur(); }
+      else { input.focus(); openDropdown(input.value); }
+    });
+
+    return wrap;
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
   // ── Transaction Type Switch ───────────────────────────
@@ -576,15 +813,8 @@
     row.className = 'item-row';
     row.id = `row-${id}`;
 
-    // Item select
-    const selWrap = document.createElement('div');
-    selWrap.className = 'select-wrap';
-    const sel = document.createElement('select');
-    sel.className = 'item-select';
-    sel.required = true;
-    sel.name = `item_${id}`;
-    populateItemSelect(sel);
-    selWrap.appendChild(sel);
+    // Searchable item autocomplete
+    const acWrap = createAutocomplete(id);
 
     // Quantity
     const qty = document.createElement('input');
@@ -613,7 +843,7 @@
     del.title = 'Remove row';
     del.onclick = () => removeRow(id);
 
-    row.appendChild(selWrap);
+    row.appendChild(acWrap);
     row.appendChild(qty);
     row.appendChild(unitWrap);
     row.appendChild(del);
@@ -643,12 +873,14 @@
     let valid = true;
 
     rows.forEach(row => {
-      const sel  = row.querySelector('.item-select');
-      const qty  = row.querySelector('input[type="number"]');
-      const unit = row.querySelector('select:last-of-type');
+      const acInput = row.querySelector('.autocomplete-input');
+      const qty     = row.querySelector('input[type="number"]');
+      const unit    = row.querySelector('select');
 
-      if (!sel.value || !qty.value || !unit.value) { valid = false; return; }
-      items.push({ item: sel.value, qty: qty.value, unit: unit.value });
+      const itemVal = acInput ? acInput.getAttribute('data-value') : '';
+
+      if (!itemVal || !qty.value || !unit.value) { valid = false; return; }
+      items.push({ item: itemVal, qty: qty.value, unit: unit.value });
     });
 
     if (!valid || items.length === 0) {
