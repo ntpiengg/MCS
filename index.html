@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inventory Transaction Form</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #0f1e35;
+      --navy-mid: #1a3050;
+      --blue: #1d6fb8;
+      --blue-light: #2c87d8;
+      --accent: #e8a020;
+      --bg: #f4f6f9;
+      --surface: #ffffff;
+      --border: #d0d8e4;
+      --text: #1a2535;
+      --muted: #637390;
+      --danger: #c0392b;
+      --success: #1a7a4a;
+      --radius: 6px;
+    }
+
+    body {
+      font-family: 'IBM Plex Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--navy);
+      padding: 0 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      border-bottom: 3px solid var(--accent);
+    }
+    .logo {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 15px;
+      font-weight: 500;
+      color: #ffffff;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .logo span { color: var(--accent); }
+    header .tagline {
+      font-size: 12px;
+      color: #8ba3bf;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    /* ── Main Layout ── */
+    main {
+      max-width: 860px;
+      margin: 40px auto;
+      padding: 0 20px 60px;
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 4px;
+    }
+    .page-subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 28px;
+    }
+
+    /* ── Transaction Tabs ── */
+    .tab-group {
+      display: flex;
+      gap: 0;
+      margin-bottom: 28px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      width: fit-content;
+    }
+    .tab-btn {
+      padding: 10px 28px;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      background: var(--surface);
+      color: var(--muted);
+      border: none;
+      border-right: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.18s ease;
+      letter-spacing: 0.03em;
+    }
+    .tab-btn:last-child { border-right: none; }
+    .tab-btn:hover { background: #eef2f8; color: var(--navy); }
+    .tab-btn.active {
+      background: var(--navy);
+      color: #fff;
+    }
+    .tab-btn.active.return { background: #5a3e8c; }
+    .tab-btn.active.adjustment { background: #1a6b50; }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .card-header {
+      background: var(--navy);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card-header.return { background: #5a3e8c; }
+    .card-header.adjustment { background: #1a6b50; }
+    .card-header h2 {
+      font-size: 12px;
+      font-weight: 500;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    .step-badge {
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+    .card-body { padding: 24px; }
+
+    /* ── Form Fields ── */
+    .field-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .field-group.full { grid-template-columns: 1fr; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+    label .req { color: var(--accent); margin-left: 2px; }
+    input[type="text"], select {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: #fff;
+      transition: border 0.15s, box-shadow 0.15s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    input[type="text"]:focus, select:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(29,111,184,0.12);
+    }
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      content: '▾';
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+      font-size: 14px;
+    }
+    .select-wrap select { width: 100%; padding-right: 30px; }
+
+    /* ── Item Rows ── */
+    .items-table-head {
+      display: grid;
+      grid-template-columns: 2fr 100px 130px 42px;
+      gap: 10px;
+      padding: 0 0 8px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 10px;
+    }
+    .items-table-head span {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+    .item-row {
+      display: grid;
+      grid-template-columns: 2fr 100px 130px 42px;
+      gap: 10px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+    .item-row input[type="number"] {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: #fff;
+      width: 100%;
+      transition: border 0.15s, box-shadow 0.15s;
+    }
+    .item-row input[type="number"]:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(29,111,184,0.12);
+    }
+    .btn-remove {
+      width: 34px; height: 34px;
+      border: 1px solid #e0b4b4;
+      background: #fff5f5;
+      color: var(--danger);
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .btn-remove:hover { background: #fde8e8; border-color: var(--danger); }
+
+    .btn-add-item {
+      margin-top: 10px;
+      padding: 8px 16px;
+      background: transparent;
+      border: 1px dashed var(--blue);
+      border-radius: var(--radius);
+      color: var(--blue);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      transition: all 0.15s;
+    }
+    .btn-add-item:hover { background: #eef5fc; }
+
+    /* ── Divider ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 20px 0;
+    }
+
+    /* ── Submit ── */
+    .submit-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+    }
+    .submit-note {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .btn-submit {
+      padding: 12px 36px;
+      background: var(--navy);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: background 0.18s, transform 0.1s;
+    }
+    .btn-submit:hover { background: var(--navy-mid); }
+    .btn-submit:active { transform: scale(0.98); }
+    .btn-submit.return { background: #5a3e8c; }
+    .btn-submit.return:hover { background: #4a3079; }
+    .btn-submit.adjustment { background: #1a6b50; }
+    .btn-submit.adjustment:hover { background: #145a42; }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 30px; right: 30px;
+      padding: 14px 22px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 500;
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: all 0.3s ease;
+      z-index: 999;
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.success { background: var(--success); }
+    #toast.error { background: var(--danger); }
+
+    /* ── Loading ── */
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Config Banner ── */
+    .config-banner {
+      background: #fff8e6;
+      border: 1px solid #f0c060;
+      border-radius: var(--radius);
+      padding: 12px 18px;
+      font-size: 13px;
+      color: #7a5800;
+      margin-bottom: 24px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .config-banner.hidden { display: none; }
+
+    @media (max-width: 600px) {
+      header { padding: 0 16px; }
+      main { padding: 0 12px 40px; }
+      .field-group { grid-template-columns: 1fr; }
+      .items-table-head, .item-row { grid-template-columns: 1fr 80px 110px 36px; }
+      .tab-btn { padding: 10px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Inventory <span>//</span> Transaction Portal</div>
+  <div class="tagline">Operations Management</div>
+</header>
+
+<main>
+  <div class="config-banner" id="configBanner">
+    ⚠️ <strong>Setup required:</strong> Replace <code>APPS_SCRIPT_URL</code> at the top of this file's &lt;script&gt; tag with your deployed Google Apps Script URL.
+  </div>
+
+  <p class="page-title">New Transaction</p>
+  <p class="page-subtitle">Complete all required fields and submit for approver review.</p>
+
+  <!-- Transaction Type Tabs -->
+  <div class="tab-group">
+    <button class="tab-btn active" data-type="REQUEST" onclick="switchType('REQUEST', this)">Request</button>
+    <button class="tab-btn return" data-type="RETURN" onclick="switchType('RETURN', this)">Return</button>
+    <button class="tab-btn adjustment" data-type="ADJUSTMENT" onclick="switchType('ADJUSTMENT', this)">Adjustment</button>
+  </div>
+
+  <form id="txForm" novalidate>
+
+    <!-- Step 1: Requestor Info -->
+    <div class="card">
+      <div class="card-header" id="cardHeader1">
+        <span class="step-badge">01</span>
+        <h2>Requestor Information</h2>
+      </div>
+      <div class="card-body">
+        <div class="field-group">
+          <div class="field">
+            <label>User Name <span class="req">*</span></label>
+            <input type="text" id="userName" placeholder="Enter your full name" required>
+          </div>
+          <div class="field">
+            <label>Date</label>
+            <input type="text" id="txDate" readonly style="background:#f4f6f9; color:var(--muted);">
+          </div>
+        </div>
+        <div class="field-group full">
+          <div class="field">
+            <label>Transaction Type</label>
+            <input type="text" id="txTypeDisplay" readonly style="background:#f4f6f9; font-weight:600; color:var(--navy);">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Items -->
+    <div class="card">
+      <div class="card-header" id="cardHeader2">
+        <span class="step-badge">02</span>
+        <h2>Item Selection</h2>
+      </div>
+      <div class="card-body">
+        <div class="items-table-head">
+          <span>Item</span>
+          <span>Quantity</span>
+          <span>Unit of Measure</span>
+          <span></span>
+        </div>
+        <div id="itemRows"></div>
+        <button type="button" class="btn-add-item" onclick="addItemRow()">
+          + Add Another Item
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 3: Approver -->
+    <div class="card">
+      <div class="card-header" id="cardHeader3">
+        <span class="step-badge">03</span>
+        <h2>Approval Routing</h2>
+      </div>
+      <div class="card-body">
+        <div class="field-group">
+          <div class="field">
+            <label>Approver <span class="req">*</span></label>
+            <div class="select-wrap">
+              <select id="approverSelect" required>
+                <option value="">— Select Approver —</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Notes (Optional)</label>
+            <input type="text" id="notes" placeholder="Any remarks or reference numbers">
+          </div>
+        </div>
+
+        <hr class="divider">
+
+        <div class="submit-row">
+          <span class="submit-note">An email notification will be sent to the selected approver.</span>
+          <button type="submit" class="btn-submit" id="submitBtn">Submit Transaction</button>
+        </div>
+      </div>
+    </div>
+
+  </form>
+</main>
+
+<div id="toast"></div>
+
+<script>
+  // ══════════════════════════════════════════════════════
+  // CONFIGURATION — Edit these values after setup
+  // ══════════════════════════════════════════════════════
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzlfSqBpv34e30s5m2IHltLkx8jWVU-llQ61PmDOKVr98VQzkRiQLjYMr040i8Ct0RZ/exec';
+
+  // Your Google Sheet ID (found in the sheet URL)
+  // e.g. https://docs.google.com/spreadsheets/d/THIS_PART/edit
+  const SHEET_ID = '1N9i12FRSViErgg6u6WFLl4VRuUKm-fwOL5ZLBGs0JJg';
+
+  // Name of the tab that holds your items list
+  const ITEMS_SHEET_TAB = 'Items';
+
+  // Name of the tab that holds your approvers list
+  const APPROVERS_SHEET_TAB = 'Approvers';
+  // ══════════════════════════════════════════════════════
+
+  const UNITS = ['pcs', 'box', 'kg', 'g', 'L', 'mL', 'ft', 'm', 'set', 'pair', 'roll', 'pack', 'bag', 'drum', 'can'];
+
+  let currentType = 'REQUEST';
+  let itemOptions = [];
+  let approverOptions = [];
+
+  // ── Init ──────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('txDate').value = new Date().toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+    document.getElementById('txTypeDisplay').value = 'REQUEST';
+    addItemRow();
+    loadSheetData();
+
+    if (APPS_SCRIPT_URL !== 'YOUR_APPS_SCRIPT_URL_HERE') {
+      document.getElementById('configBanner').classList.add('hidden');
+    }
+  });
+
+  // ── Load items & approvers from Google Sheets ─────────
+  async function loadSheetData() {
+    // We read public sheet data via the Sheets JSON API (no auth needed if sheet is "Anyone with link can view")
+    const base = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=`;
+
+    if (SHEET_ID === 'YOUR_SHEET_ID_HERE') return; // not configured yet
+
+    try {
+      const [itemsRes, approversRes] = await Promise.all([
+        fetch(base + encodeURIComponent(ITEMS_SHEET_TAB)),
+        fetch(base + encodeURIComponent(APPROVERS_SHEET_TAB))
+      ]);
+
+      const parseGViz = async (res) => {
+        const text = await res.text();
+        const json = JSON.parse(text.substring(47, text.length - 2));
+        return json.table.rows.map(r => r.c[0]?.v).filter(Boolean);
+      };
+
+      itemOptions = await parseGViz(itemsRes);
+      approverOptions = await parseGViz(approversRes);
+
+      // Refresh item row selects
+      document.querySelectorAll('.item-select').forEach(sel => populateItemSelect(sel));
+
+      // Populate approver dropdown
+      const approverSel = document.getElementById('approverSelect');
+      approverOptions.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a;
+        opt.textContent = a;
+        approverSel.appendChild(opt);
+      });
+
+    } catch (e) {
+      console.warn('Could not load sheet data:', e);
+    }
+  }
+
+  function populateItemSelect(sel) {
+    const current = sel.value;
+    sel.innerHTML = '<option value="">— Select Item —</option>';
+    itemOptions.forEach(item => {
+      const opt = document.createElement('option');
+      opt.value = item;
+      opt.textContent = item;
+      if (item === current) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+
+  // ── Transaction Type Switch ───────────────────────────
+  function switchType(type, btn) {
+    currentType = type;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    document.getElementById('txTypeDisplay').value = type;
+
+    const cls = type === 'RETURN' ? 'return' : type === 'ADJUSTMENT' ? 'adjustment' : '';
+    ['cardHeader1','cardHeader2','cardHeader3'].forEach(id => {
+      const el = document.getElementById(id);
+      el.className = 'card-header' + (cls ? ' ' + cls : '');
+    });
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.className = 'btn-submit' + (cls ? ' ' + cls : '');
+  }
+
+  // ── Item Rows ─────────────────────────────────────────
+  let rowId = 0;
+
+  function addItemRow() {
+    rowId++;
+    const id = rowId;
+    const container = document.getElementById('itemRows');
+
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    row.id = `row-${id}`;
+
+    // Item select
+    const selWrap = document.createElement('div');
+    selWrap.className = 'select-wrap';
+    const sel = document.createElement('select');
+    sel.className = 'item-select';
+    sel.required = true;
+    sel.name = `item_${id}`;
+    populateItemSelect(sel);
+    selWrap.appendChild(sel);
+
+    // Quantity
+    const qty = document.createElement('input');
+    qty.type = 'number';
+    qty.min = '0.01';
+    qty.step = '0.01';
+    qty.placeholder = '0';
+    qty.required = true;
+    qty.name = `qty_${id}`;
+
+    // Unit
+    const unitWrap = document.createElement('div');
+    unitWrap.className = 'select-wrap';
+    const unit = document.createElement('select');
+    unit.required = true;
+    unit.name = `unit_${id}`;
+    unit.innerHTML = '<option value="">— Unit —</option>' +
+      UNITS.map(u => `<option value="${u}">${u}</option>`).join('');
+    unitWrap.appendChild(unit);
+
+    // Remove
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'btn-remove';
+    del.innerHTML = '&times;';
+    del.title = 'Remove row';
+    del.onclick = () => removeRow(id);
+
+    row.appendChild(selWrap);
+    row.appendChild(qty);
+    row.appendChild(unitWrap);
+    row.appendChild(del);
+    container.appendChild(row);
+  }
+
+  function removeRow(id) {
+    const rows = document.querySelectorAll('.item-row');
+    if (rows.length <= 1) { showToast('At least one item is required.', 'error'); return; }
+    document.getElementById(`row-${id}`)?.remove();
+  }
+
+  // ── Form Submit ───────────────────────────────────────
+  document.getElementById('txForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const userName = document.getElementById('userName').value.trim();
+    const approver = document.getElementById('approverSelect').value;
+    const notes    = document.getElementById('notes').value.trim();
+
+    if (!userName) { showToast('Please enter your name.', 'error'); return; }
+    if (!approver) { showToast('Please select an approver.', 'error'); return; }
+
+    // Collect items
+    const items = [];
+    const rows  = document.querySelectorAll('.item-row');
+    let valid = true;
+
+    rows.forEach(row => {
+      const sel  = row.querySelector('.item-select');
+      const qty  = row.querySelector('input[type="number"]');
+      const unit = row.querySelector('select:last-of-type');
+
+      if (!sel.value || !qty.value || !unit.value) { valid = false; return; }
+      items.push({ item: sel.value, qty: qty.value, unit: unit.value });
+    });
+
+    if (!valid || items.length === 0) {
+      showToast('Please complete all item fields (item, quantity, unit).', 'error');
+      return;
+    }
+
+    const payload = {
+      type: currentType,
+      userName,
+      approver,
+      notes,
+      date: document.getElementById('txDate').value,
+      items
+    };
+
+    if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+      showToast('Apps Script URL not configured yet. See setup guide.', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Submitting…';
+
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      showToast('Transaction submitted! Approver has been notified.', 'success');
+      document.getElementById('txForm').reset();
+      document.getElementById('txDate').value = new Date().toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric'
+      });
+      document.getElementById('txTypeDisplay').value = currentType;
+      document.getElementById('itemRows').innerHTML = '';
+      rowId = 0;
+      addItemRow();
+
+    } catch (err) {
+      showToast('Submission failed. Please try again.', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Submit Transaction';
+    }
+  });
+
+  // ── Toast ─────────────────────────────────────────────
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `show ${type}`;
+    setTimeout(() => { t.className = ''; }, 4000);
+  }
+</script>
+</body>
+</html>
